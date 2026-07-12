@@ -113,12 +113,23 @@ Related docs: `architecture.md` (full design), `channel.md` (prior-art compariso
 
 ---
 
-## 11. Open items to verify BEFORE coding (no-guessing rule)
+## 11. Open items — VERIFIED (2026-07-12, web-researched, no guessing)
 
-- [ ] `langgraph-checkpoint-mongodb` — exact package name, install, API, maintained? version? (load-bearing — poori DB decision)
-- [ ] **deepagents vs plain LangGraph** — research agent ka base konsa
-- [ ] **MongoDB Atlas free tier** vs GCP-native — cheapest Cloud Run + Mongo path
-- [ ] **WebSocket vs SSE on Cloud Run** — channel realtime ke liye (limits check)
+- [x] **`langgraph-checkpoint-mongodb`** — REAL & official (langchain-ai/langchain-mongodb, co-maint MongoDB). Latest **v0.4.0 (2026-05-12)**, Python ≥3.10. Separate install (not in langgraph 1.0 core).
+  - `pip install -U "langgraph-checkpoint-mongodb>=0.4.0"`
+  - Sync: `from langgraph.checkpoint.mongodb import MongoDBSaver`; Async: `from langgraph.checkpoint.mongodb.aio import AsyncMongoDBSaver`
+  - `checkpointer = MongoDBSaver(pymongo_client)` → `graph.compile(checkpointer=checkpointer)`. `from_conn_string(...)` auto-creates collections/indexes.
+  - **Long-term store = separate pkg** `langgraph-store-mongodb` → `from langgraph.store.mongodb import MongoDBStore`. Plain KV works on any Mongo; **vector/semantic** store mode needs **Atlas Vector Search**.
+  - Works on any Mongo reachable via pymongo/motor. **VERDICT: safe to build on.**
+- [x] **deepagents vs plain LangGraph** → **plain LangGraph `create_agent`** (current name for `create_react_agent`; `from langchain.agents import create_agent`).
+  - Reason: single search→synthesize ReAct loop; we already own orchestration + permission + subagent layer. deepagents' filesystem/subagents/HITL would **duplicate & fight** our layer. Both multi-provider. deepagents only worth it Phase-2+ if a single agent needs internal multi-step planning + parallel sub-delegation.
+- [x] **Mongo hosting** → **Atlas M0** (cheapest reliable, permanently $0, zero ops).
+  - M0 = real **3-node replica set** → **transactions work → LangGraph checkpointer works** ✅. 512MB, 500 conns, ~100 ops/s, 10GB/7d transfer, 1 M0 per project. Available in **GCP regions** (co-locate w/ Cloud Run). Auto-pause after 30d idle (resumable).
+  - Networking: M0 has **no VPC peering** → public URI + IP allowlist `0.0.0.0/0` (rely on SCRAM+TLS), or VPC connector + Cloud NAT static IP.
+  - Self-host e2-micro rejected: 1GB RAM, standalone (no txns unless manual single-node RS), real ops burden.
+- [x] **WebSocket vs SSE on Cloud Run** → **SSE** (`EventSource`).
+  - Push is one-way server→client (msgs/status/streamed output); client actions = plain POST. SSE = plain HTTP/1.1, native auto-reconnect (handles Cloud Run's **≤60-min request-timeout cutoff** cleanly). WS bidirectional wasted + proxy/reconnect complexity ("don't enable HTTP/2 e2e" for WS).
+  - Gotchas: held-open conn keeps instance **active+billed**, 1 concurrency slot (max 1000/instance), **set min-instances ≥1** to avoid reconnect-storm cold starts; flush each event (no buffering).
 
 ---
 

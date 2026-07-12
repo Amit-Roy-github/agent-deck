@@ -1,0 +1,31 @@
+[project]
+name = "agent-deck"
+version = "0.1.0"
+description = "A control deck for AI teams — channel = team, interchangeable human/agent manager, first-class ownership/permissions."
+requires-python = ">=3.10"
+
+# Runtime stack (locked in findings.md). Phase 1 code below uses only the
+# standard library; these land as later phases wire them in.
+dependencies = [
+    "langgraph>=1.0",
+    "langchain>=1.0",
+    "langchain-anthropic>=0.3",
+    "langgraph-checkpoint-mongodb>=0.4.0",
+    "langgraph-store-mongodb>=0.3.0",
+    "pymongo>=4.9",
+    "fastapi>=0.115",
+    "uvicorn>=0.32",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["agent_deck*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
