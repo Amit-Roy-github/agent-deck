@@ -18,11 +18,35 @@ class MemberKind(str, Enum):
 
 
 class MemberRole(str, Enum):
-    """A member's role inside a channel. The manager runs the channel; the
-    manager may itself be a HUMAN or an AGENT (interchangeable)."""
+    """RESERVED — permission layer is frozen. Manager and member are the same
+    entity; "manager" is not a stored role, it is contextual (whoever owns a
+    channel). Kept only so the frozen permission module still imports."""
 
     MANAGER = "manager"
     MEMBER = "member"
+
+
+class ReasoningEffort(str, Enum):
+    """How hard an agent thinks per turn — routes cost vs quality."""
+
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    XHIGH = "xhigh"
+    MAX = "max"
+
+
+class TrustLevel(str, Enum):
+    """How much an agent is trusted to act without a human gate.
+
+    - SAFE     : risky tools pause for approval.
+    - FULL     : auto-approve everything.
+    - READONLY : plan only, no edits.
+    """
+
+    SAFE = "safe"
+    FULL = "full"
+    READONLY = "readonly"
 
 
 class Permission(str, Enum):

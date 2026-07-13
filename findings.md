@@ -138,6 +138,15 @@ Related docs: `architecture.md` (full design), `channel.md` (prior-art compariso
 - **Agent Deck** — "control deck" jahan se agents manage ho. Single clean concept, team+control feel.
 - Rejected: Cohort-Guild (redundant, hyphen weak), Agent-Tech (too generic). Considered: Cohort, Guild, Roster, Order.
 
+## 13. Member model reshape + permission freeze (2026-07-13)
+
+- **Manager and member are ONE flat entity.** No stored `role`, no `manager_id`. Being a "manager" is contextual (owning a channel), never a field. → dropped `MemberRole`/`manager_id` from `Member`.
+- **AgentConfig folded into Member** — agent run-settings live directly on the member (like the old project's user record): `name, color, provider, model, effort, trust, identity, thread_id, created_at, last_active_at`.
+- **`thread_id` = the resumable session handle.** Claude keeps a `session_id`; LangGraph's equivalent is **`thread_id`** (the MongoDB-checkpointer key a conversation is stored under). So member carries `thread_id`, not a Claude-style `sessionId`.
+- New enums: `ReasoningEffort {low,medium,high,xhigh,max}`, `TrustLevel {safe,full,readonly}` (trust semantics from the old terminal project).
+- **Permission layer FROZEN** — `permissions.py` + `Permission`/`MemberRole` enums kept intact but paused; its tests `@skip`. Re-open later, refactored to derive "manager" from channel ownership (not a role field).
+- Timestamps standardized via `clock.now_iso()` (ISO-8601 UTC) — one source, no format drift.
+
 ---
 
-_Last updated: 2026-07-12 (design phase locked)._
+_Last updated: 2026-07-13 (member model reshape; permission frozen)._

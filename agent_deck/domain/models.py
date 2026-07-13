@@ -10,11 +10,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+from agent_deck.clock import now_iso
 from agent_deck.enums import (
     AgentProvider,
     MemberKind,
-    MemberRole,
+    ReasoningEffort,
     SessionStatus,
+    TrustLevel,
 )
 from agent_deck.ids import new_id
 
@@ -23,23 +25,32 @@ SCHEMA_VERSION = 1
 
 @dataclass
 class Member:
-    """A person or an agent — one base member type. ``manager_id`` points at the
-    member that manages this one (None for a top-level manager)."""
+    """A person or an agent — one base, flat member type.
+
+    There is no stored role: manager and member are the same entity, and being
+    a "manager" is contextual (owning a channel), never a field here. Agent-run
+    settings (provider/model/effort/trust/identity) live directly on the member,
+    mirroring how Claude keeps a session — ``thread_id`` is our resumable handle
+    (LangGraph's equivalent of Claude's session id).
+    """
 
     name: str
-    kind: MemberKind
-    role: MemberRole = MemberRole.MEMBER
-    manager_id: str | None = None
+    kind: MemberKind = MemberKind.AGENT
+    color: str = ""
+    provider: AgentProvider = AgentProvider.CLAUDE
+    model: str = "claude-opus-4-8"
+    effort: ReasoningEffort = ReasoningEffort.MEDIUM
+    trust: TrustLevel = TrustLevel.SAFE
+    identity: str = ""  # markdown: who this member is / its system prompt
+    thread_id: str | None = None  # LangGraph checkpoint handle; None until first run
+    created_at: str = field(default_factory=now_iso)
+    last_active_at: str | None = None
     id: str = field(default_factory=new_id)
     schema_version: int = SCHEMA_VERSION
 
     @property
     def is_agent(self) -> bool:
         return self.kind is MemberKind.AGENT
-
-    @property
-    def is_manager(self) -> bool:
-        return self.role is MemberRole.MANAGER
 
 
 @dataclass
@@ -70,20 +81,6 @@ class Ownership:
 
     manager_id: str
     agent_id: str
-    id: str = field(default_factory=new_id)
-    schema_version: int = SCHEMA_VERSION
-
-
-@dataclass
-class AgentConfig:
-    """How one agent-member runs. Provider-agnostic: ``provider`` names the
-    backend, ``model`` is that provider's model id."""
-
-    member_id: str
-    provider: AgentProvider = AgentProvider.CLAUDE
-    model: str = "claude-opus-4-8"
-    system_prompt: str = ""
-    tool_names: list[str] = field(default_factory=list)
     id: str = field(default_factory=new_id)
     schema_version: int = SCHEMA_VERSION
 

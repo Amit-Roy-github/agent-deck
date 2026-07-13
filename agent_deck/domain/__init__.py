@@ -6,7 +6,6 @@ record means the same thing in Mongo, in a test, or over the wire.
 """
 
 from agent_deck.domain.models import (
-    AgentConfig,
     Channel,
     ChannelMembership,
     Member,
@@ -20,7 +19,6 @@ __all__ = [
     "Channel",
     "ChannelMembership",
     "Ownership",
-    "AgentConfig",
     "Message",
     "Session",
 ]
