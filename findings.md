@@ -147,6 +147,24 @@ Related docs: `architecture.md` (full design), `channel.md` (prior-art compariso
 - **Permission layer FROZEN** — `permissions.py` + `Permission`/`MemberRole` enums kept intact but paused; its tests `@skip`. Re-open later, refactored to derive "manager" from channel ownership (not a role field).
 - Timestamps standardized via `clock.now_iso()` (ISO-8601 UTC) — one source, no format drift.
 
+## 14. Phase 2 — research agent (built 2026-07-13)
+
+Real APIs verified by introspection before coding (no guessing):
+- `from langchain.agents import create_agent(model, tools, *, system_prompt, response_format, checkpointer, ...)` → `CompiledStateGraph`. Structured result at `result["structured_response"]` (AgentState has that key).
+- `MongoDBSaver(client, db_name="checkpointing_db", ...)` — **connects on construction** (index setup), NOT lazy. `InMemorySaver` for keyless local.
+- `ChatAnthropic(model_name=..., api_key=...)` (param is `model_name`, not `model`).
+- Search: **DuckDuckGo via `ddgs`** = keyless real web search → only the LLM needs a key.
+
+Pieces built:
+- `agents/findings.py` — `ResearchFindings` (pydantic) = summary + evidence[claim/detail/source_url] + sources. Used as `response_format`.
+- `tools/web_search.py` — `SearchProvider` protocol; `DuckDuckGoSearchProvider` (real), `StaticSearchProvider` (tests); `make_web_search_tool(provider)`.
+- `memory/checkpointer.py` — `build_checkpointer(uri)` → Mongo or InMemory.
+- `agents/research_agent.py` — `build_research_agent(model, search_provider, checkpointer)` + `make_researcher(agent)` (Researcher = objective+thread_id → findings; decouples runner from LangGraph).
+- `runtime/session_runner.py` — `run_research_session(...)` owns PENDING→RUNNING→COMPLETED/FAILED.
+- `config.py` — env → Settings + `build_chat_model`.
+
+Tests: **16 pass, 13 skip** (12 permission-frozen + 1 real-LLM integration, skipped unless `ANTHROPIC_API_KEY`). Full graph compiles offline (CompiledStateGraph: model+tools nodes). To run for real: `export ANTHROPIC_API_KEY=...` (+ optional `MONGODB_URI`), then the integration test / a runner call.
+
 ---
 
-_Last updated: 2026-07-13 (member model reshape; permission frozen)._
+_Last updated: 2026-07-13 (Phase 2 research agent built)._
