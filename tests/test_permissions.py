@@ -61,7 +61,7 @@ def test_member_cannot_control_another_member():
 def test_manager_controls_owned_agent():
     manager = make_manager()
     agent = make_agent(manager_id=manager.id)
-    edge = Ownership(manager_id=manager.id, agent_id=agent.id)
+    edge = Ownership(owner_id=manager.id, agent_id=agent.id)
     assert can(manager, Permission.CONTROL_AGENT, target=agent, ownerships=[edge])
 
 
@@ -79,7 +79,7 @@ def test_manager_controls_itself_as_agent_action():
 def test_plain_member_never_has_control_agent():
     agent = make_agent()
     owned = make_agent("owned")
-    edge = Ownership(manager_id=agent.id, agent_id=owned.id)
+    edge = Ownership(owner_id=agent.id, agent_id=owned.id)
     # Even with an ownership edge, a non-manager role lacks the capability.
     assert not can(agent, Permission.CONTROL_AGENT, target=owned, ownerships=[edge])
 

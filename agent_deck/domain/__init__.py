@@ -8,6 +8,7 @@ record means the same thing in Mongo, in a test, or over the wire.
 from agent_deck.domain.models import (
     Channel,
     ChannelMembership,
+    Conversation,
     Member,
     Message,
     Ownership,
@@ -18,6 +19,7 @@ __all__ = [
     "Member",
     "Channel",
     "ChannelMembership",
+    "Conversation",
     "Ownership",
     "Message",
     "Session",

@@ -167,4 +167,22 @@ Tests: **16 pass, 13 skip** (12 permission-frozen + 1 real-LLM integration, skip
 
 ---
 
-_Last updated: 2026-07-13 (Phase 2 research agent built)._
+## 15. "Manager" definition — one vocabulary (Ownership rename)
+
+Tension found in `domain/models.py`: `Member` docstring says "no stored role, manager is contextual (owning a channel)", yet `Ownership` stored a `manager_id` — reintroducing "manager" as a stored thing, with two conflicting meanings (channel owner vs owner of an agent).
+
+Decision — **"manager" is never a stored field; it's a derived label.** Two distinct, separately-named ownership facts:
+- **channel owner** = `Channel.owner_id` — owns the whole team/channel.
+- **agent owner** = `Ownership.owner_id` — controls one specific agent.
+
+`Ownership.manager_id` → **renamed `owner_id`** (it's just a member, not a "manager type"). Kept the edge (not derived from channel) on purpose: the product's moat is *granular* ownership — one channel can have many humans each owning different agents, so a per-agent owner edge is required, not derivable from a single `Channel.owner_id`.
+
+Derived rule (for permission unfreeze): a member is a "manager" IF it is some `Channel.owner_id` OR holds any `Ownership` edge. `MemberRole.MANAGER` stays reserved/derived — never persisted on `Member`. Permission engine: `CONTROL_AGENT` ⇐ `Ownership(owner_id=actor, agent_id=target)` exists; `CONTROL_CHANNEL` ⇐ `Channel.owner_id == actor`.
+
+Applied now (low-risk, logic unchanged): `models.py`, `permissions.py` (frozen, ref updated to `edge.owner_id`), `tests/test_permissions.py`. Suite still **16 pass / 13 skip**.
+
+Open (deferred with permission layer): `Session` has no timestamps (`created_at`/`started_at`/`completed_at`); `Member.created_at` auto vs `Message.created_at` required — document intent when unfreezing.
+
+---
+
+_Last updated: 2026-07-16 (Ownership.manager_id → owner_id; "manager" is derived, not stored)._

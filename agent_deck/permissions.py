@@ -67,7 +67,7 @@ def can(
         if target.id == actor.id:
             return True  # controlling oneself is always allowed
         return any(
-            edge.manager_id == actor.id and edge.agent_id == target.id
+            edge.owner_id == actor.id and edge.agent_id == target.id
             for edge in ownerships
         )
 
