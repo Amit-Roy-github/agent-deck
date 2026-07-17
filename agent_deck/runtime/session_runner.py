@@ -11,7 +11,7 @@ from __future__ import annotations
 from agent_deck.agents.findings import ResearchFindings
 from agent_deck.agents.research_agent import Researcher
 from agent_deck.domain.models import Session
-from agent_deck.enums import SessionStatus
+from agent_deck.runtime.lifecycle import session_run
 
 
 def run_research_session(
@@ -24,21 +24,15 @@ def run_research_session(
 ) -> tuple[Session, ResearchFindings]:
     """Run one research objective and return the session record + findings.
 
-    The session is marked RUNNING before the agent starts and COMPLETED on
-    success; on any error it is marked FAILED and the error is re-raised.
+    Lifecycle (RUNNING -> COMPLETED/FAILED + re-raise) ``session_run`` sambhalta
+    hai — wahi ek implementation jo chat bhi use karta hai.
     """
     session = Session(
         channel_id=channel_id,
         agent_id=agent_id,
         thread_id=thread_id,
         objective=objective,
-        status=SessionStatus.RUNNING,
     )
-    try:
+    with session_run(session):
         findings = researcher(objective, thread_id=thread_id)
-    except Exception:
-        session.status = SessionStatus.FAILED
-        raise
-
-    session.status = SessionStatus.COMPLETED
     return session, findings

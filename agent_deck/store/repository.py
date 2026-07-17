@@ -24,6 +24,7 @@ class Repository(Protocol):
     # --- members ---
     def add_member(self, member: Member) -> Member: ...
     def get_member(self, member_id: str) -> Member | None: ...
+    def find_member_by_name(self, name: str) -> Member | None: ...
     def list_members(self) -> list[Member]: ...
 
     # --- ownerships (owner member -> owned agent) ---
@@ -65,6 +66,9 @@ class InMemoryRepository:
 
     def get_member(self, member_id: str) -> Member | None:
         return self._members.get(member_id)
+
+    def find_member_by_name(self, name: str) -> Member | None:
+        return next((m for m in self._members.values() if m.name == name), None)
 
     def list_members(self) -> list[Member]:
         return list(self._members.values())

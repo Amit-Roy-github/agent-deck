@@ -24,14 +24,15 @@ from typing import Callable
 
 from agent_deck.clock import now_iso
 from agent_deck.domain.models import Conversation, Member, Message, Session
-from agent_deck.enums import SessionStatus
 from agent_deck.ids import new_id
+from agent_deck.runtime.lifecycle import session_run
 from agent_deck.store.repository import Repository
 
 # (thread_id, user_text) -> reply_text. Decouples chat from any LLM/provider.
 AgentReply = Callable[[str, str], str]
 
 DEFAULT_SYSTEM_PROMPT = "Tum ek madadgar assistant ho. Chhota, seedha jawab do."
+CHAT_OBJECTIVE = "chat reply"
 
 
 def message_text(content: object) -> str:
@@ -117,26 +118,19 @@ def send_message(
             agent_id=agent.id,
             thread_id=thread_id,
             conversation_id=conversation.id,
-            objective="chat reply",
-            status=SessionStatus.RUNNING,
+            objective=CHAT_OBJECTIVE,
         )
     )
-    try:
+    with session_run(session, on_update=repo.update_session):
         answer = reply(thread_id, text)
-    except Exception:
-        session.status = SessionStatus.FAILED
-        session.completed_at = now_iso()
-        repo.update_session(session)
-        raise
-
-    session.status = SessionStatus.COMPLETED
-    session.completed_at = now_iso()
-    repo.update_session(session)
 
     agent_message = repo.add_message(
         Message(from_member_id=agent.id, text=answer, conversation_id=conversation.id)
     )
 
+    # activity stamps — set ke saath PERSIST bhi (add_* upsert hai)
     conversation.last_message_at = now_iso()
+    repo.add_conversation(conversation)
     agent.last_active_at = now_iso()
+    repo.add_member(agent)
     return conversation, session, agent_message

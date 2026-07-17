@@ -73,6 +73,17 @@ class SessionStatus(str, Enum):
     FAILED = "failed"
 
 
+class Collection(str, Enum):
+    """Store collection per record family — naam ka sach ek jagah, taaki store
+    code aur migrations/tools kabhi alag-alag spelling na kar bethe."""
+
+    MEMBERS = "members"
+    OWNERSHIPS = "ownerships"
+    CONVERSATIONS = "conversations"
+    SESSIONS = "sessions"
+    MESSAGES = "messages"
+
+
 class AgentProvider(str, Enum):
     """The backend an agent runs on. Provider-agnostic by design — the schema
     accommodates non-Claude backends; default is Claude. Extensible."""

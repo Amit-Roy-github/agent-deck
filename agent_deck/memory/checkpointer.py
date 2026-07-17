@@ -11,11 +11,13 @@ from __future__ import annotations
 from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.checkpoint.memory import InMemorySaver
 
+from agent_deck.config import DEFAULT_DB_NAME
+
 
 def build_checkpointer(
     mongo_uri: str | None = None,
     *,
-    db_name: str = "agent_deck",
+    db_name: str = DEFAULT_DB_NAME,
 ) -> BaseCheckpointSaver:
     """Return a MongoDB-backed checkpointer if a URI is given, else in-memory.
 
