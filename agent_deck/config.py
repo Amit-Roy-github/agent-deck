@@ -12,12 +12,28 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
-from agent_deck.enums import AgentProvider
+from agent_deck.enums import AgentProvider, ReasoningEffort
 
 DEFAULT_MODEL = "claude-opus-4-8"
 # chat ke liye default Gemini: lite = ~1s reply (gemini-3.5-flash ~40s thinking karta)
 DEFAULT_GEMINI_MODEL = "gemini-3.1-flash-lite"
 DEFAULT_DB_NAME = "agent_deck"
+
+# auto-compact: context itne tokens paar kare to purani history summary ban jati
+# hai (last N messages as-is rehte). Values checkpoint mein hi update hoti hai.
+SUMMARY_TRIGGER_TOKENS = 6000
+SUMMARY_KEEP_MESSAGES = 20
+
+# Gemini ka thinking_level sirf minimal|low|medium|high leta hai (verified) —
+# humare upar ke efforts wahan clamp hote hai. Claude effort humare enum values
+# seedha leta hai (low|medium|high|xhigh|max — verified), mapping ki zaroorat nahi.
+_GEMINI_THINKING: dict[ReasoningEffort, str] = {
+    ReasoningEffort.LOW: "low",
+    ReasoningEffort.MEDIUM: "medium",
+    ReasoningEffort.HIGH: "high",
+    ReasoningEffort.XHIGH: "high",
+    ReasoningEffort.MAX: "high",
+}
 
 
 @dataclass(frozen=True)
@@ -57,14 +73,21 @@ def load_settings() -> Settings:
     )
 
 
-def _chat_model(provider: AgentProvider, model_name: str, settings: Settings):
-    """Provider -> chat model construction, EK jagah (imports lazily)."""
+def _chat_model(
+    provider: AgentProvider,
+    model_name: str,
+    settings: Settings,
+    effort: ReasoningEffort | None = None,
+):
+    """Provider -> chat model construction, EK jagah (imports lazily).
+    ``effort`` = kitna sochna hai — provider apne param mein leta hai."""
     if provider is AgentProvider.GEMINI:
         from langchain_google_genai import ChatGoogleGenerativeAI
 
         return ChatGoogleGenerativeAI(
             model=model_name,
             google_api_key=settings.google_api_key,
+            thinking_level=_GEMINI_THINKING[effort] if effort else None,
         )
 
     if provider is AgentProvider.CLAUDE:
@@ -73,6 +96,7 @@ def _chat_model(provider: AgentProvider, model_name: str, settings: Settings):
         return ChatAnthropic(
             model_name=model_name,
             api_key=settings.anthropic_api_key,
+            effort=effort.value if effort else None,
         )
 
     raise ValueError(f"provider not wired yet: {provider}")
@@ -86,6 +110,6 @@ def build_chat_model(settings: Settings | None = None):
 
 def build_model_for_member(member, settings: Settings | None = None):
     """Build the chat model an agent member runs on, routed by ``member.provider``.
-    ``member.model`` picks the exact model id (e.g. a Gemini or Claude model)."""
+    ``member.model`` picks the exact model id; ``member.effort`` routes thinking."""
     settings = settings or load_settings()
-    return _chat_model(member.provider, member.model, settings)
+    return _chat_model(member.provider, member.model, settings, effort=member.effort)

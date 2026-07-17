@@ -4,9 +4,10 @@ from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, status
 
-from agent_deck.api.deps import RepoDep, member_or_404
+from agent_deck.api.deps import AgentRuntimeDep, RepoDep, member_or_404
 from agent_deck.api.schemas import MemberCreate
 from agent_deck.domain.models import Member
+from agent_deck.runtime.agents import AgentContext
 
 router = APIRouter(prefix="/members", tags=["members"])
 
@@ -34,3 +35,14 @@ def list_members(repo: RepoDep) -> list[Member]:
 @router.get("/{member_id}")
 def get_member(member_id: str, repo: RepoDep) -> Member:
     return member_or_404(repo, member_id)
+
+
+@router.get("/{member_id}/context")
+def get_member_context(
+    member_id: str, repo: RepoDep, agent_runtime: AgentRuntimeDep
+) -> AgentContext:
+    """Agent ka context kitna bhara hai (messages + tokens). Agent-only."""
+    member = member_or_404(repo, member_id)
+    if not member.is_agent:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"not an agent: {member.name}")
+    return agent_runtime.context_for(member)

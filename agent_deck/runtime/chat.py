@@ -50,14 +50,26 @@ def message_text(content: object) -> str:
 
 def build_agent_reply(model, *, system_prompt: str = "", checkpointer=None) -> AgentReply:
     """Wrap a chat model into an ``AgentReply``: a plain conversational agent
-    (no tools, no structured output) whose memory lives in ``checkpointer``."""
+    (no tools, no structured output) whose memory lives in ``checkpointer``.
+    Auto-compact laga hai: context ``SUMMARY_TRIGGER_TOKENS`` paar kare to purani
+    history summary ban jati hai (Claude Code ke /compact jaisa), checkpoint mein hi."""
     from langchain.agents import create_agent
+    from langchain.agents.middleware import SummarizationMiddleware
+
+    from agent_deck.config import SUMMARY_KEEP_MESSAGES, SUMMARY_TRIGGER_TOKENS
 
     agent = create_agent(
         model,
         tools=[],
         system_prompt=system_prompt or DEFAULT_SYSTEM_PROMPT,
         checkpointer=checkpointer,
+        middleware=[
+            SummarizationMiddleware(
+                model,  # summary bhi isi (saste) model se
+                trigger=("tokens", SUMMARY_TRIGGER_TOKENS),
+                keep=("messages", SUMMARY_KEEP_MESSAGES),
+            )
+        ],
     )
 
     def reply(thread_id: str, user_text: str) -> str:
