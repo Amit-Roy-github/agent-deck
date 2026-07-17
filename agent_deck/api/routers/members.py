@@ -7,7 +7,7 @@ from fastapi import APIRouter, HTTPException, status
 from agent_deck.api.deps import AgentRuntimeDep, RepoDep, member_or_404
 from agent_deck.api.schemas import MemberCreate
 from agent_deck.domain.models import Member
-from agent_deck.runtime.agents import AgentContext
+from agent_deck.runtime.agents import AgentContext, CompactResult
 
 router = APIRouter(prefix="/members", tags=["members"])
 
@@ -46,3 +46,15 @@ def get_member_context(
     if not member.is_agent:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, f"not an agent: {member.name}")
     return agent_runtime.context_for(member)
+
+
+@router.post("/{member_id}/compact")
+def compact_member_context(
+    member_id: str, repo: RepoDep, agent_runtime: AgentRuntimeDep
+) -> CompactResult:
+    """Agent ki memory ABHI compact karo — purani history summary ban jati hai
+    (chat messages waise ke waise rehte hai, sirf agent ka context chhota hota)."""
+    member = member_or_404(repo, member_id)
+    if not member.is_agent:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"not an agent: {member.name}")
+    return agent_runtime.compact_for(member)

@@ -23,6 +23,8 @@ DEFAULT_DB_NAME = "agent_deck"
 # hai (last N messages as-is rehte). Values checkpoint mein hi update hoti hai.
 SUMMARY_TRIGGER_TOKENS = 6000
 SUMMARY_KEEP_MESSAGES = 20
+# manual compact (user ne button dabaya = "ABHI chhota karo") — aggressive keep
+MANUAL_COMPACT_KEEP_MESSAGES = 4
 
 # Gemini ka thinking_level sirf minimal|low|medium|high leta hai (verified) —
 # humare upar ke efforts wahan clamp hote hai. Claude effort humare enum values

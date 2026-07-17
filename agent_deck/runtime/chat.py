@@ -48,17 +48,17 @@ def message_text(content: object) -> str:
     return str(content)
 
 
-def build_agent_reply(model, *, system_prompt: str = "", checkpointer=None) -> AgentReply:
-    """Wrap a chat model into an ``AgentReply``: a plain conversational agent
-    (no tools, no structured output) whose memory lives in ``checkpointer``.
-    Auto-compact laga hai: context ``SUMMARY_TRIGGER_TOKENS`` paar kare to purani
-    history summary ban jati hai (Claude Code ke /compact jaisa), checkpoint mein hi."""
+def build_agent(model, *, system_prompt: str = "", checkpointer=None):
+    """The LangGraph agent graph: plain conversational (no tools), memory in
+    ``checkpointer``. Auto-compact laga hai: context ``SUMMARY_TRIGGER_TOKENS``
+    paar kare to purani history summary ban jati hai (Claude Code ke /compact
+    jaisa), checkpoint mein hi."""
     from langchain.agents import create_agent
     from langchain.agents.middleware import SummarizationMiddleware
 
     from agent_deck.config import SUMMARY_KEEP_MESSAGES, SUMMARY_TRIGGER_TOKENS
 
-    agent = create_agent(
+    return create_agent(
         model,
         tools=[],
         system_prompt=system_prompt or DEFAULT_SYSTEM_PROMPT,
@@ -72,6 +72,10 @@ def build_agent_reply(model, *, system_prompt: str = "", checkpointer=None) -> A
         ],
     )
 
+
+def reply_from(agent) -> AgentReply:
+    """Graph ko ``AgentReply`` shape mein lapeto — callers LangGraph kabhi na dekhe."""
+
     def reply(thread_id: str, user_text: str) -> str:
         result = agent.invoke(
             {"messages": [{"role": "user", "content": user_text}]},
@@ -80,6 +84,11 @@ def build_agent_reply(model, *, system_prompt: str = "", checkpointer=None) -> A
         return message_text(result["messages"][-1].content)
 
     return reply
+
+
+def build_agent_reply(model, *, system_prompt: str = "", checkpointer=None) -> AgentReply:
+    """Build graph + wrap — CLI jaise one-shot callers ke liye shortcut."""
+    return reply_from(build_agent(model, system_prompt=system_prompt, checkpointer=checkpointer))
 
 
 def ensure_agent_thread(repo: Repository, agent: Member) -> str:
