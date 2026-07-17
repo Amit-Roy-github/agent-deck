@@ -1,3 +1,4 @@
 - Don't use string literals use enums 
 - for prettier maintain 4 char gap from the next line 
 - Don't repeat the code , if the code is generic put it in common place and consume 
+- Don't write name abbreviations , use desciptive variable names which help both agents and humans to understand the code

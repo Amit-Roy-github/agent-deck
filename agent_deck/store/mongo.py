@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from dataclasses import asdict
 from enum import Enum
-from typing import get_type_hints
+from typing import get_args, get_type_hints
 
 from pymongo import ASCENDING, MongoClient
 
@@ -30,6 +30,17 @@ def to_doc(record) -> dict:
     return doc
 
 
+def _enum_in(hint) -> type[Enum] | None:
+    """Hint mein enum class dhundo — seedha (``MemberKind``) ya union ke andar
+    (``AgentProvider | None``). Nahi mila to None."""
+    if isinstance(hint, type) and issubclass(hint, Enum):
+        return hint
+    for arg in get_args(hint):
+        if isinstance(arg, type) and issubclass(arg, Enum):
+            return arg
+    return None
+
+
 def from_doc(cls, doc: dict):
     """Mongo document -> dataclass: ``_id`` back to ``id``, strings to enums.
     Unknown keys are dropped (forward-compat with future schema versions)."""
@@ -39,11 +50,11 @@ def from_doc(cls, doc: dict):
         if key == "_id":
             data["id"] = value
             continue
-        hint = hints.get(key)
-        if hint is None:
+        if key not in hints:
             continue  # field this code version doesn't know
-        if isinstance(hint, type) and issubclass(hint, Enum) and value is not None:
-            value = hint(value)
+        enum_cls = _enum_in(hints[key])
+        if enum_cls is not None and value is not None:
+            value = enum_cls(value)
         data[key] = value
     return cls(**data)
 
