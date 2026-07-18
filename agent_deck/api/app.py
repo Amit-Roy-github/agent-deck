@@ -3,7 +3,7 @@ wire karo (app.state), routers jodo. Koi route/business logic yahan nahi —
 routes ``routers/`` mein, asli kaam ``runtime/`` + ``store/`` mein.
 
 Run:
-    ./.venv/bin/uvicorn agent_deck.api.app:app --reload --port 8000
+    ./dev.sh            # port 8000 + --reload baked in
 Then open http://localhost:8000/docs (Swagger UI) to try every endpoint.
 """
 

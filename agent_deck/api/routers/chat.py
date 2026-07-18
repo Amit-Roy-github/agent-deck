@@ -8,7 +8,12 @@ from __future__ import annotations
 from fastapi import APIRouter, HTTPException, status
 
 from agent_deck.api.deps import AgentRuntimeDep, RepoDep, member_or_404
-from agent_deck.api.schemas import ChatRequest, ChatResult
+from agent_deck.api.schemas import (
+    ChatPreviewRequest,
+    ChatPreviewResult,
+    ChatRequest,
+    ChatResult,
+)
 from agent_deck.runtime.chat import send_message
 
 router = APIRouter(tags=["chat"])
@@ -30,3 +35,17 @@ def chat(body: ChatRequest, repo: RepoDep, agent_runtime: AgentRuntimeDep) -> Ch
         session_id=session.id,
         reply=message,
     )
+
+
+@router.post("/chat/preview")
+def chat_preview(body: ChatPreviewRequest, agent_runtime: AgentRuntimeDep) -> ChatPreviewResult:
+    """Test-drive an unsaved agent config — one stateless reply, nothing stored.
+    No sender/ownership needed since no member or conversation is created."""
+    reply = agent_runtime.preview_reply(
+        provider=body.provider,
+        model=body.model,
+        effort=body.effort,
+        identity=body.identity,
+        text=body.text,
+    )
+    return ChatPreviewResult(reply=reply)

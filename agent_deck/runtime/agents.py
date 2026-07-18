@@ -11,7 +11,8 @@ from dataclasses import dataclass
 
 from agent_deck.config import MANUAL_COMPACT_KEEP_MESSAGES, Settings, build_model_for_member
 from agent_deck.domain.models import Member
-from agent_deck.runtime.chat import AgentReply, build_agent, reply_from
+from agent_deck.enums import AgentProvider, MemberKind, ReasoningEffort
+from agent_deck.runtime.chat import AgentReply, build_agent, build_agent_reply, reply_from
 
 
 @dataclass(frozen=True)
@@ -51,6 +52,32 @@ class AgentRuntime:
 
     def reply_for(self, agent: Member) -> AgentReply:
         return reply_from(self._graph_for(agent))
+
+    def preview_reply(
+        self,
+        *,
+        provider: AgentProvider,
+        model: str,
+        effort: ReasoningEffort,
+        identity: str,
+        text: str,
+    ) -> str:
+        """Test-drive an unsaved agent config: build an ad-hoc agent and reply ONCE,
+        WITHOUT persisting anything — no member, no session, no checkpointer (memory).
+        Powers the "test drive" pane of the create-agent UI."""
+        draft = Member(
+            name="preview",
+            kind=MemberKind.AGENT,
+            provider=provider,
+            model=model,
+            effort=effort,
+            identity=identity,
+        )
+        reply = build_agent_reply(
+            build_model_for_member(draft, self._settings),
+            system_prompt=identity,
+        )
+        return reply("preview", text)
 
     def context_for(self, agent: Member) -> AgentContext:
         """Checkpoint se seedha padho — agent build kiye bina. Thread abhi tak

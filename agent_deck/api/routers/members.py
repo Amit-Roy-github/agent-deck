@@ -22,6 +22,7 @@ def create_member(body: MemberCreate, repo: RepoDep) -> Member:
             kind=body.kind,
             provider=body.provider,
             model=body.model,
+            effort=body.effort,
             identity=body.identity,
         )
     )

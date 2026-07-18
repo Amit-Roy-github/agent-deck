@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field
 
 from agent_deck.config import DEFAULT_GEMINI_MODEL
 from agent_deck.domain.models import Message
-from agent_deck.enums import AgentProvider, MemberKind
+from agent_deck.enums import AgentProvider, MemberKind, ReasoningEffort
 
 
 class MemberCreate(BaseModel):
@@ -22,6 +22,7 @@ class MemberCreate(BaseModel):
     # agent-only settings (ignored for humans)
     provider: AgentProvider = AgentProvider.GEMINI
     model: str = DEFAULT_GEMINI_MODEL
+    effort: ReasoningEffort = ReasoningEffort.MEDIUM
     identity: str = ""
 
 
@@ -40,6 +41,17 @@ class ChatRequest(BaseModel):
     text: str = Field(min_length=1)
 
 
+class ChatPreviewRequest(BaseModel):
+    """Test-drive an unsaved agent config: reply once, persist nothing.
+    No member/session/memory is created — a stateless one-shot for the create UI."""
+
+    provider: AgentProvider = AgentProvider.CLAUDE
+    model: str = Field(min_length=1)
+    effort: ReasoningEffort = ReasoningEffort.MEDIUM
+    identity: str = ""
+    text: str = Field(min_length=1)
+
+
 @dataclass
 class ChatResult:
     """One chat turn ka result — kis DM mein, kaunsa run, aur agent ka reply."""
@@ -47,3 +59,10 @@ class ChatResult:
     conversation_id: str
     session_id: str
     reply: Message
+
+
+@dataclass
+class ChatPreviewResult:
+    """A test-drive reply — just the agent's text, nothing stored."""
+
+    reply: str
